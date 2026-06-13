@@ -35,3 +35,18 @@ def retreive_chunks(user_query,retreiver):
         })
     return retreived
 
+SYSTEM_MESSAGE = """
+You are an assistant for a financial services firm that answers user queries on annual reports.
+User input will contain the context required to answer the question.
+The context will begin with the token #context and contains portions of the source document.
+The question will begin with the token #question.
+Answer ONLY using the provided context.
+If the answer is not found in the context, then do not make things up , just refuse to answers that friendly .
+""".strip()
+
+def build_context_block(retreive_chunks):
+    parts=[]
+    for chunk in retreive_chunks:
+        parts.append(chunk["Text"])
+
+    return "\n\n".join(parts)
