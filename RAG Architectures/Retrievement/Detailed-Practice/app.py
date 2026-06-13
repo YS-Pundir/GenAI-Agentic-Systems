@@ -50,3 +50,8 @@ def build_context_block(retreive_chunks):
         parts.append(chunk["Text"])
 
     return "\n\n".join(parts)
+
+def build_user_query(user_query,retreive_chunks):
+    context_text=build_context_block(retreive_chunks)
+
+    return f"#context\n{context_text}\n#question\n{user_query}"
