@@ -9,7 +9,7 @@ from tenacity import (
 
 logging.basicConfig(
     level=logging.INFO,
-    filename="shopeas.log",
+    filename="Reliability & Guardrails/Reliability & Guardrails/shopeas.log",
     filemode="w"
     
 )
