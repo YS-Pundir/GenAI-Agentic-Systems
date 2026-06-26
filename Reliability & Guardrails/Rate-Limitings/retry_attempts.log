@@ -1,0 +1,10 @@
+WARNING:__main__:Retrying __main__.simulate_flaky_api in 1 seconds as it raised NameError: name 'attempt_counter' is not defined.
+WARNING:__main__:Retrying __main__.simulate_flaky_api in 2 seconds as it raised NameError: name 'attempt_counter' is not defined.
+WARNING:__main__:Retrying __main__.simulate_flaky_api in 4 seconds as it raised NameError: name 'attempt_counter' is not defined.
+WARNING:__main__:Retrying __main__.simulate_flaky_api in 1 seconds as it raised NameError: name 'attempt_counter' is not defined.
+WARNING:__main__:Retrying __main__.simulate_flaky_api in 2 seconds as it raised NameError: name 'attempt_counter' is not defined.
+WARNING:__main__:Retrying __main__.simulate_flaky_api in 4 seconds as it raised NameError: name 'attempt_counter' is not defined.
+WARNING:__main__:Retrying __main__.simulate_flaky_api in 1 seconds as it raised Exception: HTTP 429 Too Many Requests.
+WARNING:__main__:Retrying __main__.simulate_flaky_api in 2 seconds as it raised Exception: HTTP 429 Too Many Requests.
+WARNING:__main__:Retrying __main__.simulate_flaky_api in 1 seconds as it raised Exception: HTTP 429 Too Many Requests.
+WARNING:__main__:Retrying __main__.simulate_flaky_api in 2 seconds as it raised Exception: HTTP 429 Too Many Requests.
