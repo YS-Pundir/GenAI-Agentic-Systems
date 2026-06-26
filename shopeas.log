@@ -1,0 +1,2 @@
+WARNING:__main__:Retrying __main__.lookup_order_status in 1 seconds as it raised Exception: HTTP 429 Too Many Requests.
+WARNING:__main__:Retrying __main__.lookup_order_status in 2 seconds as it raised Exception: HTTP 429 Too Many Requests.
