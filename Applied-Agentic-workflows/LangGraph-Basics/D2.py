@@ -5,6 +5,7 @@ import streamlit as st
 import matplotlib.pyplot as pt
 from typing_extensions import TypedDict
 from dotenv import load_dotenv
+import networkx as nx
 
 load_dotenv()
 import os
@@ -61,4 +62,25 @@ def polish_final_description(state: State):
     )
     final_description = response.choices[0].message.content
     return {"final_description": final_description}
+
+def build_workflow():
+    """Build the workflow using the langgraph"""
+    workflow=StateGraph(State)
+
+    workflow.add_node("GENERATE BASIC DECRIPTION",generate_basic_description)
+    workflow.add_node("ADD THE FEATURE BENEFITS",add_features_benefits)
+    workflow.add_node("CREATE MARKETING MESSAGE",create_marketing_message)
+    workflow.add_node("POLISH FINAL DESCRIPTION",polish_final_description)
+
+    workflow.add_edge(START,"GENERATE BASIC DESCRIPTION")
+    workflow.add_edge("GENERATE BASIC DECRIPTION","ADD THE FEATURE BENEFITS")
+    workflow.add_edge("ADD THE FEATURE BENEFITS","CREATE MARKETING MESSAGE")
+    workflow.add_edge("CREATE MARKETING MESSAGE","POLISH FINAL DESCRIPTION")
+    workflow.add_edge("POLISH FINAL DESCRIPTION",END)
+
+    chain = workflow.compile()
+
+    return chain
+
+
 
