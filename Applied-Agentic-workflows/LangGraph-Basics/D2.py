@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 import networkx as nx
 from pathlib import Path
 
-project_root=Path(__file__).resolve().parent.parent
+project_root=Path(__file__).resolve().parent
 
 load_dotenv()
 import os
@@ -86,20 +86,75 @@ def build_workflow():
     return chain
 
 def visualising_chain():
-    graph=nx.DiGraph
+    graph=nx.DiGraph()
     edges=[("START","GENERATE BASIC DESCRIPTION"),
            ("GENERATE BASIC DESCRIPTION","ADD THE FEATURE BENEFITS"),
            ("ADD THE FEATURE BENEFITS","CREATE MARKETING MESSAGE"),
-           ("ADD THE FEATURE BENEFITS","CREATE MARKETING MESSAGE"),
-           ("ADD THE FEATURE BENEFITS","END")
+           ("CREATE MARKETING MESSAGE","POLISH FINAL DESCRIPTION"),
+           ("POLISH FINAL DESCRIPTION","END")
 
            ]
     graph.add_edges_from(edges)
 
     plt.figure(figsize=(10, 6))
-    pos = nx.spring_layout(graph, seed=42)
+    pos = nx.spring_layout(graph, seed=88)
+
     nx.draw(graph, pos, with_labels=True, node_color='skyblue', node_size=2500, edge_color='gray', font_size=10, font_weight='bold', arrowsize=20)
     plt.title("Product Description Generation Workflow")
-    plot_loc=project_root/"Applied-Agentic-workflows"/"LangGraph-Basics"
+    plot_loc=project_root/"workflow.png"
     plt.savefig(plot_loc)
 
+
+
+
+# Main Streamlit function
+def run_streamlit_app():
+    """Handles the entire app logic: input, workflow, and output."""
+
+    plot_loc=project_root/"workflow.png"
+    # Title for the app
+    st.title("Product Description Generator with LangGraph & Groq")
+
+    # Step 1: Take product name as input from the user
+    product_name = st.text_input("Enter the product name:", placeholder="e.g., Smart Water Bottle")
+
+    # Step 2: Button to generate product description
+    if st.button("Generate Product Description"):
+        if not product_name:
+            st.warning("Please enter a product name.")
+        else:
+            with st.spinner("Generating description..."):
+                # Create the initial state with product name and empty fields for description steps
+                initial_state = {
+                    "product_name": product_name, 
+                    "basic_description": "", 
+                    "features_benefits": "", 
+                    "marketing_message": "", 
+                    "final_description": ""
+                }
+
+                # Build and run the workflow
+                chain = build_workflow()
+
+                # Run the workflow and get the results
+                result = chain.invoke(initial_state)
+
+                # Display the results in Streamlit
+                st.subheader("Basic Description:")
+                st.write(result["basic_description"])
+
+                st.subheader("Features and Benefits:")
+                st.write(result["features_benefits"])
+
+                st.subheader("Marketing Message:")
+                st.write(result["marketing_message"])
+
+                st.subheader("Final Description:")
+                st.write(result["final_description"])
+
+                # Step 3: Visualize the workflow and save it as an image
+                visualising_chain()
+                st.image(plot_loc, caption="Product Description Workflow")
+
+if __name__ == "__main__":
+    run_streamlit_app()
