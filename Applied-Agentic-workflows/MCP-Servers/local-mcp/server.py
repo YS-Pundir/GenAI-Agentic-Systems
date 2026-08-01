@@ -1,5 +1,5 @@
 # server.py — The MasaiMato Restaurant MCP Server
-from fastmcp import FastMCP
+from  fastmcp import FastMCP
 
 # 1. Initialize the server
 mcp = FastMCP("MasaiMato")

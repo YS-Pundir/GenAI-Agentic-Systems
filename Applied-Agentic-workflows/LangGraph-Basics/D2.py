@@ -2,10 +2,13 @@
 from groq import Groq
 from langgraph.graph import state,START,END,StateGraph
 import streamlit as st
-import matplotlib.pyplot as pt
+import matplotlib.pyplot as plt
 from typing_extensions import TypedDict
 from dotenv import load_dotenv
 import networkx as nx
+from pathlib import Path
+
+project_root=Path(__file__).resolve().parent.parent
 
 load_dotenv()
 import os
@@ -13,9 +16,9 @@ api_key=os.getenv("api_key")
 client=Groq(api_key=api_key)
 # Step 2 : Graph state defenation
 class State(TypedDict):
-    Product_name:str
-    Basic_decription:str
-    feature_benefits:str
+    product_name:str
+    basic_description:str
+    features_benefits:str
     marketing_message:str
     final_description:str
 
@@ -67,13 +70,13 @@ def build_workflow():
     """Build the workflow using the langgraph"""
     workflow=StateGraph(State)
 
-    workflow.add_node("GENERATE BASIC DECRIPTION",generate_basic_description)
+    workflow.add_node("GENERATE BASIC DESCRIPTION",generate_basic_description)
     workflow.add_node("ADD THE FEATURE BENEFITS",add_features_benefits)
     workflow.add_node("CREATE MARKETING MESSAGE",create_marketing_message)
     workflow.add_node("POLISH FINAL DESCRIPTION",polish_final_description)
 
     workflow.add_edge(START,"GENERATE BASIC DESCRIPTION")
-    workflow.add_edge("GENERATE BASIC DECRIPTION","ADD THE FEATURE BENEFITS")
+    workflow.add_edge("GENERATE BASIC DESCRIPTION","ADD THE FEATURE BENEFITS")
     workflow.add_edge("ADD THE FEATURE BENEFITS","CREATE MARKETING MESSAGE")
     workflow.add_edge("CREATE MARKETING MESSAGE","POLISH FINAL DESCRIPTION")
     workflow.add_edge("POLISH FINAL DESCRIPTION",END)
@@ -82,5 +85,21 @@ def build_workflow():
 
     return chain
 
+def visualising_chain():
+    graph=nx.DiGraph
+    edges=[("START","GENERATE BASIC DESCRIPTION"),
+           ("GENERATE BASIC DESCRIPTION","ADD THE FEATURE BENEFITS"),
+           ("ADD THE FEATURE BENEFITS","CREATE MARKETING MESSAGE"),
+           ("ADD THE FEATURE BENEFITS","CREATE MARKETING MESSAGE"),
+           ("ADD THE FEATURE BENEFITS","END")
 
+           ]
+    graph.add_edges_from(edges)
+
+    plt.figure(figsize=(10, 6))
+    pos = nx.spring_layout(graph, seed=42)
+    nx.draw(graph, pos, with_labels=True, node_color='skyblue', node_size=2500, edge_color='gray', font_size=10, font_weight='bold', arrowsize=20)
+    plt.title("Product Description Generation Workflow")
+    plot_loc=project_root/"Applied-Agentic-workflows"/"LangGraph-Basics"
+    plt.savefig(plot_loc)
 
