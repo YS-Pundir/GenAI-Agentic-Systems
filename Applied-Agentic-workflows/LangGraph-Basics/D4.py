@@ -1,15 +1,21 @@
 from typing import TypedDict
 from langgraph.graph import StateGraph,START,END
+from langgraph.checkpoint.sqlite import SqliteSaver
+import sqlite3
 from pydantic import BaseModel, Field
 from typing_extensions import Literal
 import groq
 import matplotlib.pyplot as plt
 import networkx as nx
+import uuid
 from dotenv import load_dotenv
 import streamlit as st
 from pathlib import Path
 project_root=Path(__file__).resolve().parent
 chart_loc=project_root/"workflow_conditional.png"
+
+file_loc=project_root/"checkpoints.sqlite"
+
 load_dotenv()
 import os
 api_key=os.getenv("api_key")
@@ -29,8 +35,9 @@ class Route(BaseModel):
 
 
 # Step 3: Function to determine the story genre using AI
-def get_router_response(input_text: str) -> str:
+def get_router_response(State) -> str:
     """Uses AI model to categorize input into a specific genre."""
+    input_text=State["input"]
     response = client.chat.completions.create(
         model="openai/gpt-oss-20b",
         messages=[
@@ -41,13 +48,15 @@ def get_router_response(input_text: str) -> str:
     genre = response.choices[0].message.content.strip().lower()
     # A simple way to handle potential variations in the model's output
     if "fantasy" in genre:
-        return "fantasy"
+        decision= "fantasy"
     elif "sci-fi" in genre or "science fiction" in genre:
-        return "sci-fi"
+        decision = "sci-fi"
     elif "mystery" in genre:
-        return "mystery"
+        decision= "mystery"
     else:
-        return "mystery" # Default case
+        decision= "mystery" # Default case
+
+    return {"decision":decision}
 
 # Step 4: Define story generation functions for each genre
 def generate_fantasy_story(state: State):
@@ -88,11 +97,7 @@ def generate_mystery_story(state: State):
     )
     return {"output": response.choices[0].message.content.strip(), "decision": "Mystery"}
 
-# Step 5: Routing function to determine which story function to call
-def route_request(state: State):
-    """Determines the genre and routes accordingly."""
-    decision = get_router_response(state["input"])
-    return {"decision": decision}
+
 
 
 def route_decision(state: State) -> Literal["generate_fantasy_story", "generate_sci_fi_story", "generate_mystery_story"]:
@@ -105,11 +110,11 @@ def route_decision(state: State) -> Literal["generate_fantasy_story", "generate_
         return "generate_mystery_story"
 
 # Step 6: Build LangGraph workflow
-def build_workflow():
+def build_workflow(mamory):
 
     workflow=StateGraph(State)
 
-    workflow.add_node("route_request",route_request)
+    workflow.add_node("route_request",get_router_response)
     workflow.add_node("generate_fantasy_story",generate_fantasy_story)
     workflow.add_node("generate_mystery_story",generate_mystery_story)
     workflow.add_node("generate_sci_fi_story",generate_sci_fi_story)
@@ -129,7 +134,7 @@ def build_workflow():
     workflow.add_edge("generate_mystery_story",END)
     workflow.add_edge("generate_sci_fi_story",END)
 
-    return workflow.compile()
+    return workflow.compile(checkpointer=mamory)
 
 
 # Function to visualize the workflow
@@ -159,13 +164,43 @@ def visualize_workflow():
 def run_streamlit_app():
     """Creates an interactive UI for story generation."""
     st.title("Genre-Based Story Generator with Conditional Routing")
+
+
+    # Initialize SQLite Checkpointer and Thread ID in session state
+    if "memory" not in st.session_state:
+        # check_same_thread=False is required for Streamlit's threading model
+        conn = sqlite3.connect(file_loc, check_same_thread=False)
+        st.session_state.memory = SqliteSaver(conn)
+        
+    st.sidebar.header("Resume Session")
+    if "thread_id" not in st.session_state:
+        st.session_state.thread_id = str(uuid.uuid4())
+        
+    # Expose Thread ID so user can copy it, restart app, and paste it to resume
+    st.session_state.thread_id = st.sidebar.text_input(
+        "Thread ID (Save this to resume later):", 
+        value=st.session_state.thread_id
+    )
+
+    # Build workflow and config globally so we can check state without generating
+    chain = build_workflow(st.session_state.memory)
+    config = {"configurable": {"thread_id": st.session_state.thread_id}}
+
+    if st.sidebar.button("Load Saved State"):
+        saved_state = chain.get_state(config)
+        if saved_state.values:
+            st.sidebar.success("Found saved memory!")
+            st.sidebar.json(saved_state.values)
+        else:
+            st.sidebar.warning("No memory found for this Thread ID.")
+    
     user_input = st.text_input("Enter your story idea:", placeholder="e.g., A knight discovers a hidden portal...")
 
     if st.button("Generate Story"):
         if user_input:
             with st.spinner("Analyzing genre and writing story..."):
-                workflow = build_workflow()
-                state = workflow.invoke({"input": user_input})
+                workflow = build_workflow(st.session_state.memory)
+                state = workflow.invoke({"input": user_input},config=config)
                 st.subheader("Detected Genre:")
                 st.write(state["decision"].capitalize())
                 st.subheader("Generated Story:")
